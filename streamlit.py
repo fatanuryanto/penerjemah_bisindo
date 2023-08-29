@@ -52,40 +52,44 @@ with st.container():
             mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
             mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
             
-            if curr_word_time - last_word_time >= 2.0: # it has been at least 2 seconds
-                if results.right_hand_landmarks or results.left_hand_landmarks:
-                    # Get Landmark Coordinate
-                    lh = list(np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3))
-                    rh = list(np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3))
+            if curr_word_time - last_word_time >= 2.0 and (results.right_hand_landmarks or results.left_hand_landmarks): # it has been at least 2 seconds
+                # Get Landmark Coordinate
+                lh = list(np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3))
+                rh = list(np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3))
 
-                    # Satukan baris
-                    row = lh+rh
+                # Satukan baris
+                row = lh+rh
 
-                    # Predict
-                    X = pd.DataFrame([row])
-                    hand_class = RFC.predict(X)[0]
-                    hand_prob=RFC.predict_proba(X)[0]
+                # Predict
+                X = pd.DataFrame([row])
+                hand_class = RFC.predict(X)[0]
+                hand_prob=RFC.predict_proba(X)[0]
 
-                    word=word+hand_class
-                    text_word.write(word)
-                    last_word_time = curr_word_time
-                else :
-                        if curr_word_time - last_word_time >= 4.0:
-                            sentence=""
-                            text_sentence.write(sentence)
-                            word=""
-                            text_word.write(word)
-                            last_word_time = curr_word_time
-                        else : 
-                            sentence=sentence+" "+word
-                            text_sentence.write(sentence)
-                            word=""
-                            text_word.write(word)
+                word=word+hand_class
+                text_word.write(word)
+                last_word_time = curr_word_time
+
+            elif  curr_word_time - last_word_time >= 2.0 and (results.right_hand_landmarks or results.left_hand_landmarks) is None:
+                    
+                    if sentence.endswith(" "):
+                        sentence=""
+                        text_sentence.write(sentence)
+                        word=""
+                        text_word.write(word)
+                        last_word_time = curr_word_time
+
+                    else: 
+                        sentence=sentence+" "+word
+                        text_sentence.write(sentence)
+                        word=""
+                        text_word.write(word)
+                        last_word_time = curr_word_time
                             
 
             frame_placeholder.image(image,channels="RGB")
             if cv2.waitKey(1) & 0xFF == ord('x'):
                 break
+            
     cap.release()
     cv2.destroyAllWindows()
     st.write("---")
